@@ -1,6 +1,5 @@
 from datetime import datetime
 from app.extensions import db
-# product.py, order.py, user.py
 
 
 
@@ -22,10 +21,10 @@ class Order(db.Model):
     product = db.relationship('Product', back_populates='orders')
     user = db.relationship('User', back_populates='orders', overlaps="customer")
 
-
-    def __init__(self, customer_id, product_id, status, quantity, total_price, gender=None):
+def __init__(self, customer_id, product_id, user_id, status, quantity, total_price, gender=None):
         self.customer_id = customer_id
         self.product_id = product_id
+        self.user_id = user_id
         self.status = status
         self.quantity = quantity
         self.total_price = total_price

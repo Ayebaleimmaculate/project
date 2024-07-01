@@ -4,6 +4,7 @@ from app.models.customers import Customer
 from http import HTTPStatus
 import validators
 
+
 customer = Blueprint('customers', __name__, url_prefix='/api/v1/customers')
 
 @customer.route('/register', methods=['POST'])
@@ -50,7 +51,7 @@ def register_customer():
         db.session.rollback()
         return jsonify({'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
-@customer.route('/update>', methods=['PUT'])
+@customer.route('/update/<int:id>', methods=['PUT'])
 def update_customer(id):
     data = request.get_json()
     phone_number = data.get('phone_number')
@@ -75,3 +76,11 @@ def update_customer(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+@customer.route('/<int:id>', methods=['DELETE'])
+def delete_customer(id):
+    customer = Customer.query.get_or_404(id)
+    db.session.delete(customer)
+    db.session.commit()
+
+    return jsonify({'message': 'Customer deleted successfully'}), HTTPStatus.OK

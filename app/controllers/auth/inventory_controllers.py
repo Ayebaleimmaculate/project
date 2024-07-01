@@ -1,77 +1,85 @@
 from flask import Blueprint, request, jsonify
+from datetime import datetime
 from app.extensions import db
 from app.models.inventory import Inventory
-from datetime import datetime
+from app.models.products import Product
+from http import HTTPStatus
 
-inventorys = Blueprint('inventory', __name__, url_prefix='/api/inventory')
+inventory = Blueprint('inventory', __name__, url_prefix='/api/v1/inventory')
 
-# Endpoint to create a new inventory item
-@inventorys.route('/create', methods=['POST'])
-def create_inventory():
+@inventory.route('/create', methods=['POST'])
+def create_inventory_item():
     data = request.get_json()
-    
-    # Data validation can be added here
     product_id = data.get('product_id')
     quantity = data.get('quantity')
-    restock_date = data.get('restock_date')
     location = data.get('location')
     parent_id = data.get('parent_id')
-    
-    new_inventory = Inventory(
-        product_id=product_id,
-        quantity=quantity,
-        restock_date=datetime.fromisoformat(restock_date) if restock_date else datetime.now(),
-        location=location,
-        parent_id=parent_id
-    )
-    
-    db.session.add(new_inventory)
-    db.session.commit()
-    
-    return jsonify({
-        'message': 'Inventory item created successfully',
-        'inventory': {
-            'id': new_inventory.id,
-            'product_id': new_inventory.product_id,
-            'quantity': new_inventory.quantity,
-            'restock_date': new_inventory.restock_date.isoformat(),
-            'location': new_inventory.location,
-            'parent_id': new_inventory.parent_id
-        }
-    }), 201
 
-# Endpoint to update an inventory item
-@inventorys.route('/<int:id>', methods=['PUT'])
-def update_inventory(id):
-    inventory = Inventory.query.get_or_404(id)
+    if not product_id or not quantity:
+        return jsonify({'error': 'Product ID and quantity are required'}), HTTPStatus.BAD_REQUEST
+
+    try:
+        new_inventory = Inventory(
+            product_id=product_id,
+            quantity=quantity,
+            restock_date=datetime.now(),
+            location=location,
+            parent_id=parent_id
+        )
+        db.session.add(new_inventory)
+        db.session.commit()
+        return jsonify({'message': 'Inventory item created successfully!', 'inventory_item': new_inventory.id}), HTTPStatus.CREATED
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+@inventory.route('/<int:id>', methods=['GET'])
+def get_inventory_item(id):
+    inventory_item = Inventory.query.get(id)
+    if not inventory_item:
+        return jsonify({'error': 'Inventory item not found'}), HTTPStatus.NOT_FOUND
+
+    return jsonify({
+        'id': inventory_item.id,
+        'product_id': inventory_item.product_id,
+        'quantity': inventory_item.quantity,
+        'restock_date': inventory_item.restock_date,
+        'location': inventory_item.location,
+        'parent_id': inventory_item.parent_id
+    }), HTTPStatus.OK
+
+
+@inventory.route('/<int:id>', methods=['PUT'])
+def update_inventory_item(id):
+    inventory_item = Inventory.query.get_or_404(id)
     data = request.get_json()
-    
-    # Update inventory attributes based on data received
-    inventory.product_id = data.get('product_id', inventory.product_id)
-    inventory.quantity = data.get('quantity', inventory.quantity)
-    inventory.restock_date = datetime.fromisoformat(data.get('restock_date')) if data.get('restock_date') else inventory.restock_date
-    inventory.location = data.get('location', inventory.location)
-    inventory.parent_id = data.get('parent_id', inventory.parent_id)
-    
-    db.session.commit()
-    
-    return jsonify({
-        'message': 'Inventory item updated successfully',
-        'inventory': {
-            'id': inventory.id,
-            'product_id': inventory.product_id,
-            'quantity': inventory.quantity,
-            'restock_date': inventory.restock_date.isoformat(),
-            'location': inventory.location,
-            'parent_id': inventory.parent_id
-        }
-    }), 200
+    try:
+        if 'quantity' in data:
+            inventory_item.quantity = data['quantity']
+        if 'product_id' in data:
+            inventory_item.product_id = data['product_id']
+        if 'location' in data:
+            inventory_item.location = data['location']
+        
+        db.session.commit()
+        return jsonify({'message': 'Inventory item updated successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
 
-# Endpoint to delete an inventory item
-@inventorys.route('/<int:id>', methods=['DELETE'])
-def delete_inventory(id):
-    inventory = Inventory.query.get_or_404(id)
-    db.session.delete(inventory)
-    db.session.commit()
-    
-    return jsonify({'message': 'Inventory item deleted successfully'}), 200
+@inventory.route('/<int:id>', methods=['DELETE'])
+def delete_inventory_item(id):
+    try:
+        inventory_item = Inventory.query.get(id)
+        if not inventory_item:
+            return jsonify({'error': 'Inventory item not found'}), HTTPStatus.NOT_FOUND
+
+        db.session.delete(inventory_item)
+        db.session.commit()
+        return jsonify({'message': 'Inventory item deleted successfully!'}), HTTPStatus.OK
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR

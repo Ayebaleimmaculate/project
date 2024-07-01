@@ -6,9 +6,9 @@ from app.extensions import db, migrate, bcrypt, jwt
 from app.controllers.auth.auths_controllers import auth
 from app.controllers.auth.category_controllers import categories
 from app.controllers.auth.customers_controllers import customer
-from app.controllers.auth.inventory_controllers import inventorys
+from app.controllers.auth.inventory_controllers import inventory
 from app.controllers.auth.orders_controllers import order
-from app.controllers.auth.products_controllers import product
+from app.controllers.auth.products_controllers import products
 
 def create_app():
     app = Flask(__name__)
@@ -32,9 +32,9 @@ def create_app():
     app.register_blueprint(auth, url_prefix='/api/v1/auth')
     app.register_blueprint(categories, url_prefix='/api/v1/categories')
     app.register_blueprint(customer, url_prefix='/api/v1/customers')
-    app.register_blueprint(inventorys, url_prefix='/api/v1/inventory')
+    app.register_blueprint(inventory, url_prefix='/api/v1/inventory')
     app.register_blueprint(order, url_prefix='/api/v1/orders')
-    app.register_blueprint(product, url_prefix='/api/v1/products')
+    app.register_blueprint(products, url_prefix='/api/v1/products')
 
     # Import models to ensure they are registered with SQLAlchemy
     from app.models.category import Category
@@ -46,12 +46,12 @@ def create_app():
 
     @app.route('/')
     def home():
-        print("Home route accessed")  # Debug statement
+        print("Home route accessed") 
         return "Welcome to our bakery shop"
 
     @app.errorhandler(500)
     def internal_error(error):
-        print(f"Internal Server Error: {error}")  # Debug statement
+        print(f"Internal Server Error: {error}")  
         return jsonify({"msg": "Internal Server Error", "error": str(error)}), 500
 
     return app

@@ -40,7 +40,7 @@ def create_category():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@categories.route('/update/<int:category_id>', methods=['PUT'])
+@categories.route('/<int:category_id>', methods=['PUT'])
 @jwt_required()
 def update_category(category_id):
     try:
@@ -72,7 +72,7 @@ def update_category(category_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-@categories.route('/delete/<int:id>', methods=['DELETE'])
+@categories.route('/<int:id>', methods=['DELETE'])
 @jwt_required()
 def delete_category(id):
     try:
